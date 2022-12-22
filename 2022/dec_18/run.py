@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, Generator, Set
+from typing import Tuple, Generator
 
 
 if __name__ == "__main__":
