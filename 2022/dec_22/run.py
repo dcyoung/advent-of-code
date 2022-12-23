@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 import numpy as np
 from tqdm import tqdm
 
@@ -9,11 +9,6 @@ CLOCK_ORDER = [
     "left",
     "up",
 ]
-
-FACE_SIDE_TOP = 0
-FACE_SIDE_BOTTOM = 1
-FACE_SIDE_LEFT = 2
-FACE_SIDE_RIGHT = 3
 
 
 @dataclass(frozen=True)
@@ -54,17 +49,18 @@ class Game:
     def face_idx(self, p: Point2D) -> int:
         h = self.grid.shape[0] // 3
         w = self.grid.shape[1] // 4
-
+        if p.x < 0 or p.y < 0 or p.x >= self.grid.shape[1] or p.y >= self.grid.shape[0]:
+            return -1
         if 0 <= p.y < h:
             return 0 if 2 * w <= p.x < 3 * w else -1
-        if h <= p.y <= 2 * h:
+        if h <= p.y < 2 * h:
             if p.x < w:
                 return 1
             if p.x < 2 * w:
                 return 2
-            if p.y < 2 * h:
+            if p.x < 3 * w:
                 return 3
-        if p.y < 3 * h:
+        if 2 * h <= p.y < 3 * h:
             if 2 * w <= p.x < 3 * w:
                 return 4
             if 3 * w <= p.x < 4 * w:
@@ -100,6 +96,12 @@ class Game:
         curr_face_idx = self.face_idx(self.position)
         assert curr_face_idx >= 0
         p_local = self.relative_face_point(p=self.position, face_idx=curr_face_idx)
+
+        if self.face_idx(next_p_raw) >= 0:
+            return (
+                next_p_raw,
+                self.facing,
+            )
         # case @face_0
         if curr_face_idx == 0:
             # left -> (down face_2)
@@ -176,8 +178,8 @@ class Game:
             self.facing,
         )
 
-    def step_cube(self) -> Tuple[Point2D, str]:
-        next_pos, next_facing = self.face_transition()
+    def step(self, cube: bool) -> Tuple[Point2D, str]:
+        next_pos, next_facing = self.face_transition() if cube else self.next_raw()
         v = self.grid[next_pos.y, next_pos.x]
 
         if v == 1:
@@ -185,30 +187,24 @@ class Game:
         assert v == 2
         return next_pos, next_facing
 
-    def step(self) -> Tuple[Point2D, str]:
-        vector = (
-            self.grid[self.position.y]
-            if self.horiz()
-            else self.grid[:, self.position.x]
+    def next_raw(self) -> Tuple[Point2D, str]:
+        curr_face_idx = self.face_idx(self.position)
+        assert curr_face_idx >= 0
+        curr_local = self.relative_face_point(p=self.position, face_idx=curr_face_idx)
+        next_local = Point2D(
+            x=curr_local.x + {"right": 1, "left": -1}.get(self.facing, 0),
+            y=curr_local.y + {"down": 1, "up": -1}.get(self.facing, 0),
         )
-        play_indxs = [i for i, v in enumerate(vector) if v > 0]
 
-        if self.facing in {"up", "left"}:
-            play_indxs.reverse()
+        tlc, brc = self.tlc_brc(curr_face_idx)
 
-        curr_idx = self.position.x if self.horiz() else self.position.y
-        curr_idx_relative = curr_idx - play_indxs[0]
-
-        next_idx_relative = (curr_idx_relative + 1) % len(play_indxs)
-        next_idx = play_indxs[next_idx_relative]
-        if vector[next_idx] == 2:
-            return (
-                Point2D(x=next_idx, y=self.position.y)
-                if self.horiz()
-                else Point2D(x=self.position.x, y=next_idx),
-                self.facing,
-            )
-        return self.position, self.facing
+        return (
+            Point2D(
+                x=tlc.x + (next_local.x % (brc.x - tlc.x + 1)),
+                y=tlc.y + (next_local.y % (brc.y - tlc.y + 1)),
+            ),
+            self.facing,
+        )
 
     def next_dir(self, ccw: bool) -> str:
         idx = CLOCK_ORDER.index(self.facing) + (-1 if ccw else 1)
@@ -221,10 +217,32 @@ class Game:
 
         before = self.position
         for _ in range(move.forward):
-            self.position, self.facing = self.step_cube() if cube else self.step()
+            self.position, self.facing = self.step(cube=cube)
             if self.position == before:
                 return
             before = self.position
+
+    def display_face_idx(self):
+        print("-----------------------------")
+        for y in range(self.grid.shape[0]):
+            s = ""
+            for x in range(self.grid.shape[1]):
+                f_idx = self.face_idx(Point2D(x, y))
+                s += " " if f_idx < 0 else str(f_idx)
+            print(s)
+
+    def display(self, named: Dict[str, Point2D] = None):
+        print("-----------------------------")
+        mapping = {0: " ", 1: "#", 2: "."}
+        for y in range(self.grid.shape[0]):
+            s = ""
+            for x in range(self.grid.shape[1]):
+                c = mapping[self.grid[y, x]]
+                for name, p in named.items():
+                    if x == p.x and y == p.y:
+                        c = name
+                s += c
+            print(s)
 
     def answer(self) -> int:
         row = self.position.y + 1
@@ -268,6 +286,17 @@ if __name__ == "__main__":
     grid, instructions = parse_input(fpath)
 
     game = Game(grid=grid)
+
+    # game.display_face_idx()
+    # for a, facing in [(Point2D(6, 4), "up")]:
+    #     # print(game.tlc_brc(0))
+    #     game.position = a
+    #     game.facing = facing
+    #     new_p, new_facing = game.face_transition()
+    #     print(new_p, new_facing)
+    #     s_dir = {"up": "^", "down": "d", "right": ">", "left": "<"}[new_facing]
+    #     game.display(named={"A": a, s_dir: new_p})
+
     for move in tqdm(instructions):
         game.move(move=move)
 
