@@ -9,6 +9,7 @@ CLOCK_ORDER = [
     "left",
     "up",
 ]
+FACING_NAMES = {"up": "∧", "down": "∨", "right": ">", "left": "<"}
 
 
 @dataclass(frozen=True)
@@ -187,21 +188,35 @@ class Game:
         assert v == 2
         return next_pos, next_facing
 
+    def play_idxs(self, idx: int, vert: bool) -> List[int]:
+        vector = self.grid[:, idx] if vert else self.grid[idx, :]
+        return [i for i, v in enumerate(vector) if v > 0]
+
     def next_raw(self) -> Tuple[Point2D, str]:
         curr_face_idx = self.face_idx(self.position)
         assert curr_face_idx >= 0
-        curr_local = self.relative_face_point(p=self.position, face_idx=curr_face_idx)
-        next_local = Point2D(
-            x=curr_local.x + {"right": 1, "left": -1}.get(self.facing, 0),
-            y=curr_local.y + {"down": 1, "up": -1}.get(self.facing, 0),
+        next_p = Point2D(
+            x=self.position.x + {"right": 1, "left": -1}.get(self.facing, 0),
+            y=self.position.y + {"down": 1, "up": -1}.get(self.facing, 0),
         )
+        next_face_idx = self.face_idx(next_p)
+        if next_face_idx >= 0:
+            return next_p, self.facing
 
-        tlc, brc = self.tlc_brc(curr_face_idx)
-
+        # wrap
+        play_idxs = (
+            self.play_idxs(idx=self.position.y, vert=False)
+            if self.horiz()
+            else self.play_idxs(idx=self.position.x, vert=True)
+        )
         return (
             Point2D(
-                x=tlc.x + (next_local.x % (brc.x - tlc.x + 1)),
-                y=tlc.y + (next_local.y % (brc.y - tlc.y + 1)),
+                x={"left": play_idxs[-1], "right": play_idxs[0]}.get(
+                    self.facing, self.position.x
+                ),
+                y={"up": play_idxs[-1], "down": play_idxs[0]}.get(
+                    self.facing, self.position.y
+                ),
             ),
             self.facing,
         )
@@ -213,11 +228,13 @@ class Game:
     def move(self, move: Move, cube: bool = False) -> None:
         if move.turn:
             self.facing = self.next_dir(ccw=move.ccw)
+            # game.display(named={FACING_NAMES[self.facing]: self.position})
             return
 
         before = self.position
         for _ in range(move.forward):
             self.position, self.facing = self.step(cube=cube)
+            # game.display(named={FACING_NAMES[self.facing]: self.position})
             if self.position == before:
                 return
             before = self.position
@@ -287,16 +304,6 @@ if __name__ == "__main__":
 
     game = Game(grid=grid)
 
-    # game.display_face_idx()
-    # for a, facing in [(Point2D(6, 4), "up")]:
-    #     # print(game.tlc_brc(0))
-    #     game.position = a
-    #     game.facing = facing
-    #     new_p, new_facing = game.face_transition()
-    #     print(new_p, new_facing)
-    #     s_dir = {"up": "^", "down": "d", "right": ">", "left": "<"}[new_facing]
-    #     game.display(named={"A": a, s_dir: new_p})
-
     for move in tqdm(instructions):
         game.move(move=move)
 
@@ -304,6 +311,7 @@ if __name__ == "__main__":
 
     game = Game(grid=grid)
     for move in tqdm(instructions):
+        # print(move)
         game.move(move=move, cube=True)
 
     print(game.answer())
