@@ -7,13 +7,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-)
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
+	utils "example.com/common"
+)
 
 type Result struct {
 	Sub string
@@ -23,7 +19,7 @@ type Result struct {
 
 func pt1() {
 	file, err := os.Open("input.txt")
-	check(err)
+	utils.Check(err)
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
@@ -39,17 +35,17 @@ func pt1() {
 		}
 		vAsStr := string([]rune{digits[0], digits[len(digits)-1]})
 		v, err := strconv.Atoi(vAsStr)
-		check(err)
+		utils.Check(err)
 		total += v
 	}
-	check(scanner.Err())
+	utils.Check(scanner.Err())
 
 	fmt.Println(total)
 }
 
 func pt2() {
 	file, err := os.Open("input.txt")
-	check(err)
+	utils.Check(err)
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
@@ -76,13 +72,12 @@ func pt2() {
 		})
 		vAsStr := fmt.Sprint(results[0].Dig) + fmt.Sprint(results[len(results)-1].Dig)
 		v, err := strconv.Atoi(vAsStr)
-		check(err)
+		utils.Check(err)
 		total += v
 	}
-	check(scanner.Err())
+	utils.Check(scanner.Err())
 
 	fmt.Println(total)
-
 }
 
 func main() {
