@@ -1,6 +1,11 @@
 package utils
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+
+	"github.com/k0kubun/pp"
+)
 
 func Check(e error) {
 	if e != nil {
@@ -32,4 +37,53 @@ func MultiAtoi(arr []string) []int {
 		result[i], _ = strconv.Atoi(value)
 	}
 	return result
+}
+
+func ParseListOfInts(s string) []int {
+	s = strings.TrimSpace(s)
+	return MultiAtoi(strings.Split(s, " "))
+}
+
+func IndexOf(arr []string, value string) int {
+	for i, v := range arr {
+		if v == value {
+			return i
+		}
+	}
+	return -1
+}
+
+func PPrintLn[T any](x T) {
+	pp.Println(x)
+}
+
+func MinMax(array []int) (int, int) {
+	var max int = array[0]
+	var min int = array[0]
+	for _, value := range array {
+		if max < value {
+			max = value
+		}
+		if min > value {
+			min = value
+		}
+	}
+	return min, max
+}
+
+func ChunkSlice(slice []int, chunkSize int) [][]int {
+	var chunks [][]int
+	for i := 0; i < len(slice); i += chunkSize {
+		end := i + chunkSize
+
+		// necessary check to avoid slicing beyond
+		// slice capacity
+		if end > len(slice) {
+			end = len(slice)
+		}
+
+		chunks = append(chunks, slice[i:end])
+	}
+
+	return chunks
 }
