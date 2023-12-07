@@ -44,13 +44,25 @@ func ParseListOfInts(s string) []int {
 	return MultiAtoi(strings.Split(s, " "))
 }
 
-func IndexOf(arr []string, value string) int {
+func IndexOf[T comparable](arr []T, value T) int {
 	for i, v := range arr {
 		if v == value {
 			return i
 		}
 	}
 	return -1
+}
+
+func MaxEntry[T comparable](m map[T]int) (T, int) {
+	var maxKey T
+	var maxValue int
+	for key, value := range m {
+		if value > maxValue {
+			maxKey = key
+			maxValue = value
+		}
+	}
+	return maxKey, maxValue
 }
 
 func PPrintLn[T any](x T) {
