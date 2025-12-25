@@ -33,7 +33,9 @@
     "d5": "pnpm with-env pnpm tsx ./src/d5.ts",
     "d6": "pnpm with-env pnpm tsx ./src/d6.ts",
     "d7": "pnpm with-env pnpm tsx ./src/d7.ts",
-    "d8": "pnpm with-env pnpm tsx ./src/d8.ts"
+    "d8": "pnpm with-env pnpm tsx ./src/d8.ts",
+    "d9": "pnpm with-env pnpm tsx ./src/d9.ts",
+    "d10": "pnpm with-env pnpm tsx ./src/d10.ts"
   },
   "dependencies": {
     "effect": "^3.17.7"

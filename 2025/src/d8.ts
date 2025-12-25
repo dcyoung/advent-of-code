@@ -1,6 +1,6 @@
 import { Effect, pipe } from "effect"
 import * as path from "node:path"
-import { readFile, splitLines } from "./common.js"
+import { readFile, splitLines, pairwise } from "./common.js"
 
 class Point {
     constructor(public x: number, public y: number, public z: number) { }
@@ -28,13 +28,7 @@ const parseInput = (lines: string[]) => {
 }
 
 const pt1 = (coords: Point[]) => {
-    const nCoords = coords.length
-    const pairs = [];
-    for (let i = 0; i < nCoords; i++) {
-        for (let j = i + 1; j < nCoords; j++) {
-            pairs.push([coords[i], coords[j]] as [Point, Point])
-        }
-    }
+    const pairs = pairwise(coords);
 
     const sortedPairs = pairs
         .map(([a, b]) => {
@@ -75,13 +69,7 @@ const pt1 = (coords: Point[]) => {
 
 
 const pt2 = (coords: Point[]) => {
-    const nCoords = coords.length
-    const pairs = [];
-    for (let i = 0; i < nCoords; i++) {
-        for (let j = i + 1; j < nCoords; j++) {
-            pairs.push([coords[i], coords[j]] as [Point, Point])
-        }
-    }
+    const pairs = pairwise(coords);
 
     const sortedPairs = pairs
         .map(([a, b]) => {
